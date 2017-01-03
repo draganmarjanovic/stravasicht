@@ -11,7 +11,7 @@
 // Set your access token here
 accessToken: "",
 
-refreshFrequency: 5000, // How often to refresh the widget
+refreshFrequency: 500, // How often to refresh the widget
 
 httpGet: function(url) {
     var xmlHttp = new XMLHttpRequest(); // Create the request object
@@ -44,7 +44,7 @@ afterRender: function(domEl) {
 
     var labz = []
     var dats = []
-    for (var i = 0; i < 31; i++) {
+    for (var i = 0; i < 365; i++) {
         labz.push("");
         dats.push(Math.random() * 100);
     }
@@ -58,13 +58,29 @@ afterRender: function(domEl) {
     }
 
     config = {
+        responsive: true,
+        maintainAspectRatio: false,
         barThickness: 5,
         scales: {
+            xAxes: [{
+                display: false
+            }],
             yAxes: [{
+                display: true,
                 ticks: {
-                    beginAtZero:true
+                    beginAtZero: true,
+                    fontColor: "#FFF",
+                    fontSize: 11,
+                    fontStyle: "bold"
+                },
+                gridLines: {
+                    color: "rgba(0, 0, 0, 0)",
+                    display: false
                 }
             }]
+        },
+        legend: {
+            display: false
         }
     }
 
@@ -73,16 +89,13 @@ afterRender: function(domEl) {
         data: dataz,
         options: config
     });
-
+    this.refreshFrequency = 100000;
 },
 
 style: "        \n\
-  top: 50px     \n\
-  left: 20px    \n\
-  right-padding: 10px \n\
-  height: 200px    \n\
-  width: 100%    \n\
+  bottom: .25%     \n\
+  left: 0.25%    \n\
+  height: 200px \n\
+  width: 99%    \n\
                 \n\
-  h1            \n\
-    color: #fff \n\
 "
