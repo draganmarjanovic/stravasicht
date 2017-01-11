@@ -3,6 +3,14 @@
  *
  * A simple (but configurable) widget to display Strava data.
  *
+ * Getting Started:
+ * 1. You will need a Strava API access token to allow the widget
+ *    to pull data from the Strava API.
+ *    1.1 Simply go to: https://www.strava.com/settings/api
+ *    1.2 Create an application and insert the access token below
+ *
+ * 2. You should be good to go! Feel free to muck around with configuration :)
+ *
  * Author: Dragan Marjanovic - marjanovic.io
  */
 
@@ -11,12 +19,18 @@
 // Set your access token here
 accessToken: "",
 
-refreshFrequency: 1000, // How often to refresh the widget
 
-// Options: distance, elapsed_time, average_speed, max_speed
+color: 'FFFFFF', // The hex color code for the desired graph color
+
+// Options: distance, elapsed_time, max_speed
 metric: "distance", // The metric to track and display
 
-rate_tracker: 0,
+
+dataFreq: (1000 * 60 * 15), // Data refresh interval (Strava API)
+refreshFrequency: 5000,
+
+pinged: 0, // Time of the last data update
+data: null, // The data from the last update
 
 httpGet: function(url) {
     var xmlHttp = new XMLHttpRequest(); // Create the request object
@@ -28,29 +42,30 @@ httpGet: function(url) {
 getData: function () {
     var baseURL = "https://www.strava.com/api/v3/athlete/activities";
     var requestURL = baseURL + "?access_token=" + this.accessToken;
-    this.rate_tracker++;
     return this.httpGet(requestURL);
 },
 
 getDayCount: function(now) {
     var start = new Date(now.getFullYear(), 0, 0);
-    console.log("Start: " + start);
-    console.log("Now: " + now);
     var diff = now - start;
     var oneDay = 1000 * 60 * 60 * 24;
-    console.log("Frac: " + (diff/oneDay) + "Diff:" + diff + "oneDay" + oneDay);
     return Math.floor(diff / oneDay);
 },
 
 command: function (callback) {
-    requestData = this.getData();
+    var now = new Date();
+    // Has been more than 15 minutes since last fetch
+    if (now - this.pinged >= this.dataFreq ) {
+        this.data = this.getData();
+        this.pinged = now; // Update the last request date
+    }
     // Feed the data back to the renderer for processing
-    callback(0, requestData);
+    callback(0, this.data);
 },
 
 render: function (output) {
     // Initialise the Chart library and canvas container
-    content = "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js\"></script>"
+    content = "<script src=\"Chart.bundle.min.js.lib\"></script>"
     content += '<canvas id="myChart"></canvas>'
     return content;
 },
@@ -60,9 +75,8 @@ afterRender: function(domEl) {
 
     activityData = JSON.parse(this.getData());
 
-
     var trackedMetricData = [];
-    var labelData = []
+    var labelData = [];
 
     var day = this.getDayCount(new Date());
 
@@ -70,7 +84,6 @@ afterRender: function(domEl) {
         labelData.push("");
         trackedMetricData.push(0.001);
     }
-    console.log(trackedMetricData);
 
     for (var i=0; i < activityData.length; i++) {
         var activity = activityData[i];
@@ -86,16 +99,13 @@ afterRender: function(domEl) {
                 case "elapsed_time":
                     trackedMetricData[dayBin] += activity.elapsed_time/60;
                     break;
-                case "average_speed":
-                    averageKilometres = activity.average_speed * 60 * 60 / 1000;
-                    trackedMetricData[dayBin] += averageKilometres;
-                    break;
-                case "max_speed":
+                case "max_speed": // The max speed for that day
                     maxKph = activity.max_speed * 60 * 60 / 1000;
-                    trackedMetricData[dayBin] += maxKph;
-                    case "distance":
+                    if (maxKph > trackedMetricData[dayBin]) {
+                        trackedMetricData[dayBin] = maxKph;
+                    }
+                case "distance":
                 default: // Default should be distance
-                    console.log("Bin: " + dayBin + "\n" + "Distance:" + activity.distance/1000);
                     trackedMetricData[dayBin] += activity.distance/1000;
                     break;
             }
@@ -104,12 +114,11 @@ afterRender: function(domEl) {
     }
 
 
-    console.log(trackedMetricData);
     var dataz = {
         labels: labelData,
         datasets: [{
             data: trackedMetricData,
-            backgroundColor: 'rgba(255, 255, 255, 1)',
+            backgroundColor: this.color
         }]
     }
 
@@ -123,7 +132,7 @@ afterRender: function(domEl) {
                 display: true,
                 ticks: {
                     beginAtZero: true,
-                    fontColor: "#FFF",
+                    fontColor: this.color,
                     fontSize: 11,
                     fontStyle: "bold"
                 },
@@ -141,7 +150,8 @@ afterRender: function(domEl) {
         data: dataz,
         options: config
     });
-    this.refreshFrequency = 100000;
+    // Increase the refresh frequency now that everything is ready
+    this.refreshFrequency = this.dataFreq;
 },
 
 style: "            \n\
