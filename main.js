@@ -65,7 +65,7 @@ command: function (callback) {
 
 render: function (output) {
     // Initialise the Chart library and canvas container
-    content = "<script src=\"Chart.bundle.min.js.lib\"></script>"
+    content = "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js\"></script>"
     content += '<canvas id="myChart"></canvas>'
     return content;
 },
@@ -110,7 +110,6 @@ afterRender: function(domEl) {
                     break;
             }
         }
-
     }
 
 
